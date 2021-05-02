@@ -1,0 +1,381 @@
+---
+title: 'Case Study 1: How Does a Bike-Share Navigate Speedy Success?'
+author: "Guillermo Buzzoni"
+date: "30/4/21"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+---
+
+This Case Study  will be developed following the next structure:
+
+ask, prepare, process, analyze, share and act.
+
+Messages and warnings will be dismissed for better readability
+
+```{r dismissing messages and warnings}
+knitr::opts_chunk$set(message = FALSE, warning = FALSE)
+```
+
+
+## Ask
+
+The business task is to understand how casual riders and annual members use bikes differently.
+Are their trips of a similar duration?
+Can we expect approximately the same amount of trips during weekdays, and a significantly different one on weekends? And throughout the year?
+
+Here, the stakeholders are:
+* the director of marketing and manager,
+* the marketing analytics team and
+* the executive team
+
+## Prepare
+
+The data used is that for the months from April, 2020 to March, 2021, linked [here](https://divvy-tripdata.s3.amazonaws.com/index.html)
+
+The first step is to install and load the packages I will use
+
+```{r installing and loading packages}
+
+
+
+install.packages("tidyverse", repos = "http://cran.us.r-project.org")
+install.packages("skimr", repos = "http://cran.us.r-project.org")
+install.packages("lubridate", repos = "http://cran.us.r-project.org")
+
+library(tidyverse)
+library(skimr)
+library(lubridate)
+
+```
+
+Since I am doing this script from a computer with a system language different from English, I will set the locale to English to avoid confusion when displaying days of the week.
+
+```{r setting locale to English}
+Sys.setlocale('LC_TIME', 'English')
+```
+
+Let's see what the data looks like:
+
+I will load the dataset, composed of 12 csv files, 1 for each month. 
+
+```{r reading csv files}
+
+apr_2020 <- read.csv('202004-divvy-tripdata.csv')
+may_2020 <- read.csv('202005-divvy-tripdata.csv')
+jun_2020 <- read.csv('202006-divvy-tripdata.csv')
+jul_2020 <- read.csv('202007-divvy-tripdata.csv')
+aug_2020 <- read.csv('202008-divvy-tripdata.csv')
+sep_2020 <- read.csv('202009-divvy-tripdata.csv')
+oct_2020 <- read.csv('202010-divvy-tripdata.csv')
+nov_2020 <- read.csv('202011-divvy-tripdata.csv')
+dec_2020 <- read.csv('202012-divvy-tripdata.csv')
+jan_2021 <- read.csv('202101-divvy-tripdata.csv')
+feb_2021 <- read.csv('202102-divvy-tripdata.csv')
+mar_2021 <- read.csv('202103-divvy-tripdata.csv')
+```
+
+I will look at the first month, and also see its first rows
+
+```{r skimming April 2020}
+
+skim_without_charts(apr_2020)
+head(apr_2020)
+```
+
+Is this data relevant, original, comprehensive, current and cited? 
+
+This case study was made for the purpose of practicing data analysis skills, so I do not know where the data comes from.
+
+This data is current and comprehends most of what I would likely need to perform a thorough analysis: some more insights could be gained by measuring the distance traveled in each trip, but knowing instead how long each trip lasts can help complete the business task.
+
+A close look to how rideable types are related to the different stations and days of the week, and even times of the year could also show valuable insights.
+
+## Process
+
+Since there are 12 data frames, one for each month from April 2020 to March 2021, I will combine them into one data frame. 
+
+Before merging, I will check that the column names match perfectly:
+
+```{r checking column names}
+colnames(apr_2020) 
+colnames(may_2020) 
+colnames(jun_2020) 
+colnames(jul_2020) 
+colnames(aug_2020) 
+colnames(sep_2020) 
+colnames(oct_2020) 
+colnames(nov_2020) 
+colnames(dec_2020) 
+colnames(jan_2021) 
+colnames(feb_2021) 
+colnames(mar_2021)
+```
+
+Next, I will inspect the data frames and look for incongruencies:
+
+```{r inspecting data frames}
+str(apr_2020)
+str(may_2020)
+str(jun_2020)
+str(jul_2020)
+str(aug_2020)
+str(sep_2020)
+str(oct_2020)
+str(nov_2020)
+str(dec_2020)
+str(jan_2021)
+str(feb_2021)
+str(mar_2021)
+
+```
+
+Since December 2020 start_station_id and end_station_id are char. In the previous months they are int. So i turn them all into char (since some stations id include letters and numbers)
+
+```{r convert col types}
+apr_2020 <- mutate(apr_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+may_2020 <- mutate(may_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+jun_2020 <- mutate(jun_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+jul_2020 <- mutate(jul_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+aug_2020 <- mutate(aug_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+sep_2020 <- mutate(sep_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+oct_2020 <- mutate(oct_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+nov_2020 <- mutate(nov_2020, start_station_id = as.character(start_station_id), end_station_id = as.character(end_station_id))
+```
+
+Everything is looking good: all variables in each data frame have the same name and type, so next step is to combine all 12 dataframes into one
+
+```{r binding rows}
+all_rides <- bind_rows(apr_2020, may_2020, jun_2020, jul_2020, aug_2020, sep_2020, oct_2020, nov_2020, dec_2020, jan_2021, feb_2021, mar_2021)
+```
+
+I will look what the resulting dataframe is like, and also see its first and last rows
+
+```{r skimming all_rides}
+skim_without_charts(all_rides)
+head(all_rides)
+tail(all_rides)
+```
+There is missing data: some start and end stations ids and only a few coordinates of end stations
+
+```{r filtering}
+all_rides %>% filter(start_station_id == '')
+```
+
+Taking a closer look at the incomplete rows, it can be seen that station names are also lacking, so it is not possible to complete the missing station ids.
+Since only a few rows are missing, I will continue with the analysis.
+
+I will drop all latitude and longitude columns, because I will not use that information for analysis.
+Since data is being removed, I will create a new version of the dataframe (v2)
+
+```{r dropping lat and lng columns}
+all_rides_v2 <- all_rides %>% select(-c(start_lat, start_lng, end_lat, end_lng))
+```
+
+The started_at and ended_at columns are of character type. Converting them into a POSIXct format will make calculations possible
+
+```{r converting started_at and ended_at}
+all_rides_v2 <- mutate(all_rides_v2, started_at = as.POSIXct(started_at,format='%Y-%m-%d %H:%M:%S'), ended_at = as.POSIXct(ended_at,format='%Y-%m-%d %H:%M:%S') )
+all_rides_v2
+```
+
+I will add a column to calculate the length of each ride
+
+```{r adding column for ride length}
+all_rides_v2 <- mutate(all_rides_v2, ride_length = difftime(ended_at, started_at, units = 'mins'))
+```
+
+There are some rides where trip_length shows up as negative, including several hundred rides where the company took bikes out of circulation for Quality Control reasons. I will delete these rides, along with rides lasting less than a minute and those lasting more than twelve hours, which will be considered the minimum and maximum possible length of a trip during this analysis.
+
+```{r deleting rides shorter than 1 min and QC rides}
+all_rides_v2 <- all_rides_v2[!all_rides_v2$start_station_name == 'HQ QR', ]
+all_rides_v2 <- all_rides_v2[!all_rides_v2$ride_length < 1, ]
+all_rides_v2 <- all_rides_v2[!all_rides_v2$ride_length > 720, ]
+all_rides_v2 %>% arrange(ride_length)
+```
+I will add month, day, year and day_of_week columns that will help with later analysis
+
+```{r adding month, day, year and day_of_week columns}
+all_rides_v2$date <- as.Date(all_rides_v2$started_at)
+all_rides_v2$month <- format(as.Date(all_rides_v2$date), '%m')
+all_rides_v2$day <- format(as.Date(all_rides_v2$date), '%d')
+all_rides_v2$year <- format(as.Date(all_rides_v2$date), '%Y')
+all_rides_v2$day_of_week <- format(as.Date(all_rides_v2$date), '%A')
+```
+
+## Analyze
+
+Now the data is ready to be analyzed.
+
+I will start the analysis by looking at the summary statistics for the length of the rides
+
+```{r summary stats for ride_length}
+mean(all_rides_v2$ride_length) 
+median(all_rides_v2$ride_length)
+max(all_rides_v2$ride_length) 
+min(all_rides_v2$ride_length)
+
+summary(all_rides_v2$ride_length)
+```
+
+Next I will get the summary statistics for the ride length of casual and member riders
+
+```{r summary stats of ride length for casuals and members}
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$member_casual, FUN = mean)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$member_casual, FUN = median)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$member_casual, FUN = max)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$member_casual, FUN = min)
+
+```
+
+Then I will compare the mean of the length of the rides for casual and member riders and for each day of the week
+
+```{r ride length mean by rider type and day of the week}
+all_rides_v2$day_of_week <- ordered(all_rides_v2$day_of_week, levels=c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
+
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$member_casual + all_rides_v2$day_of_week, FUN = mean)
+
+```
+
+Here are the summary statistics for ride length by rideable type
+
+```{r ride length by rideable type}
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$rideable_type, FUN = mean)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$rideable_type, FUN = median)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$rideable_type, FUN = max)
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$rideable_type, FUN = min)
+
+```
+
+I will compare the mean of the length of the rides for each rideable type and for each day of the week
+
+```{r ride length mean by rideable type and day of the week}
+all_rides_v2$day_of_week <- ordered(all_rides_v2$day_of_week, levels=c('Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'))
+
+aggregate(all_rides_v2$ride_length ~ all_rides_v2$rideable_type + all_rides_v2$day_of_week, FUN = mean)
+
+```
+
+## Share
+
+Here will be presented the visual results.
+
+```{r number of rides by weekday and rider type}
+all_rides_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = member_casual)) +
+  geom_col(position = 'dodge')
+```
+
+```{r average ride duration by weekday and rider type}
+all_rides_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(member_casual, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = member_casual)) +
+  geom_col(position = 'dodge')
+```
+
+```{r number of rides by month and rider type}
+all_rides_v2 %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, month)  %>% 
+  ggplot(aes(x = month, y = number_of_rides, fill = member_casual, group = member_casual, col = member_casual)) +
+  geom_col(position = 'dodge') + geom_line()
+```
+
+
+
+```{r average ride duration by month and rider type}
+all_rides_v2 %>% 
+  group_by(member_casual, month) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(member_casual, month)  %>% 
+  ggplot(aes(x = month, y = average_duration, fill = member_casual, group = member_casual, col = member_casual)) +
+  geom_col(position = 'dodge') + geom_line()
+```
+
+
+
+
+
+
+```{r number of rides by weekday and rideable type}
+all_rides_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(rideable_type, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(rideable_type, weekday)  %>% 
+  ggplot(aes(x = weekday, y = number_of_rides, fill = rideable_type)) +
+  geom_col(position = 'dodge')
+
+```
+
+```{r average ride duration by weekday and rideable type}
+all_rides_v2 %>% 
+  mutate(weekday = wday(started_at, label = TRUE)) %>% 
+  group_by(rideable_type, weekday) %>% 
+  summarise(number_of_rides = n()
+            ,average_duration = mean(ride_length)) %>% 
+  arrange(rideable_type, weekday)  %>% 
+  ggplot(aes(x = weekday, y = average_duration, fill = rideable_type)) +
+  geom_col(position = 'dodge')
+```
+
+Lastly, here is presented how much of the sum of the duration of all rides belongs to casual rides and how much belongs to member rides. Does this mix align with the company's goals?
+
+```{r Members and casuals usage time share}
+all_rides_v2 %>% 
+  group_by(member_casual) %>% 
+  summarise(ride_length = n()) %>% 
+  ggplot(aes(x = 1, y = ride_length, fill = member_casual)) +
+  geom_bar(position='fill', stat='identity')+
+  scale_x_discrete(limits = 1:2)
+```
+
+### Key Takeaways
+
+* For casual riders, there are significantly more rides during weekends. In average, the longest rides are on Sundays (39 min) and the shortest on Tuesdays (32 min).
+
+* For member riders, the number of rides by weekday varies little, peaking on Saturdays. The average duration (16 min) also shows little to no variation for each day of the week.
+
+* During Warmer months there are more rides from both casual and member riders, especially during the June - October period.
+
+* Also during warmer months casual riders make significantly longer trips. Member riders also make longer trips in that season, but the peak is not as noticeable as it is for casual riders. 
+
+* Docked bikes are the most used type and those with the longest trips on average.
+
+* Member riders are responsible for 59% of total riding time.
+
+## Act
+
+Recommendations:
+
+1) Offer a weekend-only subscription, which also enables riders to get a discount on one day of the week to help them get used to riding on the week.
+
+2) Offer a summer subscription, to reach more customers that ride only during the warmer months.
+
+3) Retrieve further data on the daily commute to work of casual riders to see if they can find stations where they need.
+
+
+
+
+
+
+
+
+
+
+
+
