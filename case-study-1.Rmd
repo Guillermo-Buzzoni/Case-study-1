@@ -36,24 +36,12 @@ The data used is that for the months from April, 2020 to March, 2021, linked [he
 
 The first step is to install and load the packages I will use
 
-```{r installing and loading packages}
-
-
-
-install.packages("tidyverse", repos = "http://cran.us.r-project.org")
-install.packages("skimr", repos = "http://cran.us.r-project.org")
-install.packages("lubridate", repos = "http://cran.us.r-project.org")
+```{r loading packages}
 
 library(tidyverse)
 library(skimr)
 library(lubridate)
 
-```
-
-Since I am doing this script from a computer with a system language different from English, I will set the locale to English to avoid confusion when displaying days of the week.
-
-```{r setting locale to English}
-Sys.setlocale('LC_TIME', 'English')
 ```
 
 Let's see what the data looks like:
